@@ -4,7 +4,8 @@ const PORT = 3000;
 const path = require("path");
 const fs = require("fs");
 const hbs = require("express-handlebars");
-const { threadId } = require("worker_threads");
+const http = require("http");
+const server = http.createServer(app);
 
 app.use(express.json());
 
@@ -57,6 +58,13 @@ app.post("/start", function (req, res) {
   }
 });
 
-app.listen(PORT, function () {
+server.listen(PORT, function () {
   console.log("start serwera na porcie " + PORT);
+});
+
+const { Server } = require("socket.io");
+const socketio = new Server(server);
+
+socketio.on("onTable", (data) => {
+  console.log(data);
 });

@@ -5,8 +5,10 @@ let game;
 let net;
 let ui;
 window.onload = () => {
-  game = new Game();
+  const client = io();
   net = new Net();
+  game = new Game(client, net.sendTableSocket);
+
   ui = new Ui(
     net.fetchPost,
     net.fetchCheckForPlayers,

@@ -5,7 +5,8 @@ export default class Game {
   pionek;
   pole;
   kafle = [];
-  constructor() {
+  constructor(client, sendTable) {
+    this.client = client;
     this.scene = new THREE.Scene();
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setClearColor(0xfffff0);
@@ -17,7 +18,8 @@ export default class Game {
     this.camera.position.set(0, 200, 300);
 
     //
-
+    this.sendTable = sendTable;
+    //
     this.plansza = [
       [1, 0, 1, 0, 1, 0, 1, 0],
       [0, 1, 0, 1, 0, 1, 0, 1],
@@ -132,7 +134,7 @@ export default class Game {
             );
           }
 
-          object.material.color.setHex(0x00b300);
+          object.material.color.setHex(0xffa500);
           this.pionek = object;
 
           this.kafle.forEach((el) => {
@@ -164,6 +166,7 @@ export default class Game {
                 this.pionek.material.color.setHex(
                   this.color == "black" ? "0x000000" : "0xffffff"
                 );
+                this.sendTable(this.client, this.plansza);
               })
               .start();
 
