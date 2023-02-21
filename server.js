@@ -67,7 +67,7 @@ socketio.on("connection", (client) => {
   console.log(client.id);
   client.on("onTable", (data) => {
 const arr=data.data
-client.emit('setNewTable',{data:arr})
+client.broadcast.emit('onTable',{data:arr})
   });
 });
 

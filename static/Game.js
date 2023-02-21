@@ -3,7 +3,7 @@ export default class Game {
   pionki = [];
   color ;
   pionek;
-  isStarted=false
+  isStarted;
   pole;
   kafle = [];
   constructor(client, sendTable) {
@@ -17,9 +17,11 @@ export default class Game {
     this.scene.add(axes);
     this.camera = new THREE.PerspectiveCamera(45, 4 / 3, 0.1, 10000);
     // this.camera.position.set(0, 200, 300);
-let i=setInterval(()=>{
-  if(this.isStarted){this.addRaycasterEvents();clearInterval(i)}
-},200)
+
+    this.client.on('onTable',(wow)=>{
+      console.log(wow);
+      this.plansza=wow.data
+    })
     //
     this.sendTable = sendTable;
     //
@@ -105,6 +107,8 @@ let i=setInterval(()=>{
         }
       });
     });
+    this.addRaycasterEvents();
+
   }
   startGame(id, game) {
     this.camera = game.camera;
@@ -112,14 +116,15 @@ let i=setInterval(()=>{
     game.id = id;
     if (game.id == 1) {
       this.camera.position.set(0, 200, -300);
-      this.color = "white";
+     game.color = "white";
     } else {
       this.camera.position.set(0, 200, 300);
-      this.color = "black";
+     game.color = "black";
     }
-
+    console.log(this.color);
   }
   addRaycasterEvents() {
+   
     window.addEventListener("click", (event) => {
       // if(!this.isStarted) return
       const raycaster = new THREE.Raycaster();
@@ -129,9 +134,10 @@ let i=setInterval(()=>{
       mouseVector.y = -(event.clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(mouseVector, this.camera);
       const intersects = raycaster.intersectObjects(this.scene.children);
-
       if (intersects.length > 0) {
         const object = intersects[0].object;
+        if(!object.data) return
+        console.log(object,this.color);
         if (object.data.name == "pion" && object.data.kolor == this.color) {
           if (this.pionek) {
             this.pionek.material.color.setHex(
@@ -167,9 +173,7 @@ let i=setInterval(()=>{
               .onUpdate(() => {})
               .onComplete(() => {
                 this.sendTable(this.client, this.plansza);
-            this.client.on('setNewTable',(wow)=>{
-              this.plansza=wow.data
-            })
+            
                 this.clearScene();
                 this.renderBoard();
                 this.rednerPionki();
