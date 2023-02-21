@@ -34,5 +34,7 @@ export default class Net {
   sendTableSocket(client, data) {
     console.log(client, data);
     client.emit("onTable", { data: data });
+     
   }
+
 }

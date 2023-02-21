@@ -58,13 +58,21 @@ app.post("/start", function (req, res) {
   }
 });
 
-server.listen(PORT, function () {
-  console.log("start serwera na porcie " + PORT);
-});
+
 
 const { Server } = require("socket.io");
 const socketio = new Server(server);
 
-socketio.on("onTable", (data) => {
-  console.log(data);
+socketio.on("connection", (client) => {
+  console.log(client.id);
+  client.on("onTable", (data) => {
+const arr=data.data
+client.emit('setNewTable',{data:arr})
+  });
+});
+
+
+
+server.listen(PORT, function () {
+  console.log("start serwera na porcie " + PORT);
 });

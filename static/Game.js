@@ -1,8 +1,9 @@
 import { Pionek } from "./Pionek.js";
 export default class Game {
   pionki = [];
-  color = "black";
+  color ;
   pionek;
+  isStarted=false
   pole;
   kafle = [];
   constructor(client, sendTable) {
@@ -15,8 +16,10 @@ export default class Game {
     const axes = new THREE.AxesHelper(1000);
     this.scene.add(axes);
     this.camera = new THREE.PerspectiveCamera(45, 4 / 3, 0.1, 10000);
-    this.camera.position.set(0, 200, 300);
-
+    // this.camera.position.set(0, 200, 300);
+let i=setInterval(()=>{
+  if(this.isStarted){this.addRaycasterEvents();clearInterval(i)}
+},200)
     //
     this.sendTable = sendTable;
     //
@@ -102,21 +105,23 @@ export default class Game {
         }
       });
     });
-    this.addRaycasterEvents();
   }
   startGame(id, game) {
     this.camera = game.camera;
+    this.isStarted=true
     game.id = id;
-    // if (game.id == 1) {
-    //   this.camera.position.set(0, 200, -300);
-    //   this.color = "white";
-    // } else {
-    //   this.camera.position.set(0, 200, 300);
-    //   this.color = "black";
-    // }
+    if (game.id == 1) {
+      this.camera.position.set(0, 200, -300);
+      this.color = "white";
+    } else {
+      this.camera.position.set(0, 200, 300);
+      this.color = "black";
+    }
+
   }
   addRaycasterEvents() {
     window.addEventListener("click", (event) => {
+      // if(!this.isStarted) return
       const raycaster = new THREE.Raycaster();
       const mouseVector = new THREE.Vector2();
 
@@ -133,12 +138,13 @@ export default class Game {
               this.color == "black" ? "0x000000" : "0xffffff"
             );
           }
-
           object.material.color.setHex(0xffa500);
           this.pionek = object;
+          console.log(this.pionek);
 
           this.kafle.forEach((el) => {
             if (this.pionek && el.data.kolor == "brown") {
+              el.material.color.setHex(0xa52a2a);
               if (this.checkRowAndCol(el)) {
                 el.material.color.setHex(0x00b300);
               }
@@ -160,13 +166,20 @@ export default class Game {
               .to({ x: object.data.x, z: object.data.z }, 500)
               .onUpdate(() => {})
               .onComplete(() => {
+                this.sendTable(this.client, this.plansza);
+            this.client.on('setNewTable',(wow)=>{
+              this.plansza=wow.data
+            })
                 this.clearScene();
                 this.renderBoard();
                 this.rednerPionki();
                 this.pionek.material.color.setHex(
                   this.color == "black" ? "0x000000" : "0xffffff"
                 );
-                this.sendTable(this.client, this.plansza);
+
+          
+          
+
               })
               .start();
 
