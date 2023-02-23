@@ -44,11 +44,14 @@ export default class Ui {
   handleLog(event) {
     const mesPromise = this.fetchData(this.name.value);
     mesPromise.then((data) => {
-      this.message = data;
+      console.log(data);
+      this.message = data.message;
       this.status.innerText = this.message;
       this.waiting = true;
-      this.dialog.classList.add("hidden");
-      this.overlay.classList.add("hidden");
+      if (!data.error) {
+        this.dialog.classList.add("hidden");
+        this.overlay.classList.add("hidden");
+      }
     });
   }
   handleReset() {

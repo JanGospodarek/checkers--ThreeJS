@@ -1,5 +1,7 @@
 export default class Net {
-  constructor() {}
+  constructor(client) {
+    this.client = client;
+  }
 
   fetchPost(nazwa) {
     const body = JSON.stringify({ name: nazwa }); // body czyli przesyłane na serwer dane
@@ -8,7 +10,7 @@ export default class Net {
     const resData = fetch("/handleLogIn", { method: "post", body, headers }) // fetch
       .then((response) => response.json())
       .then((data) => {
-        return data.message;
+        return data;
       });
     return resData;
   }
@@ -34,11 +36,9 @@ export default class Net {
   sendTableSocket(client, data) {
     console.log(client, data);
     client.emit("onTable", { data: data });
-     
   }
-  setWaiting(client,id){
+  setWaiting(client = this.client, id) {
     console.log(id);
-    client.emit("onWait", { id: id });
+    client.emit("start", { id: id });
   }
-
 }

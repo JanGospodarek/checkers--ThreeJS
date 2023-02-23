@@ -16,7 +16,6 @@ app.set("views", path.join(__dirname, "static/views"));
 app.engine("hbs", hbs({ defaultLayout: "main.hbs" }));
 app.set("view engine", "hbs");
 
-
 app.get("/", function (req, res) {
   res.render("index.hbs");
 });
@@ -24,10 +23,10 @@ app.get("/", function (req, res) {
 app.post("/handleLogIn", function (req, res) {
   const name = req.body.name;
   if (users.length == 2) {
-    res.send({ message: "Utworzono już dwóch użytkowników" });
+    res.send({ message: "Utworzono już dwóch użytkowników", error: true });
   } else {
     if (!users.find((el) => el.name == name)) {
-      users.push({ id: users.length + 1, name: name,waiting:false });
+      users.push({ id: users.length + 1, name: name, waiting: false });
       if (users.length == 1)
         res.send({
           message: `Jesteś zalogowany jako ${name}, czekanie na drugiego gracza`,
@@ -35,7 +34,8 @@ app.post("/handleLogIn", function (req, res) {
       else {
         res.send({ message: `Jesteś zalogowany jako ${name}` });
       }
-    } else res.send({ message: `Użytkownik ${name} już istnieje` });
+    } else
+      res.send({ message: `Użytkownik ${name} już istnieje`, error: true });
   }
 });
 
@@ -63,26 +63,40 @@ app.post("/start", function (req, res) {
   }
 });
 
-
 const { Server } = require("socket.io");
 const socketio = new Server(server);
-
+let interval,
+  intervals = [];
 socketio.on("connection", (client) => {
-
   client.on("onTable", (data) => {
-const arr=data.data
-client.broadcast.emit('onTable',{data:arr})
+    const arr = data.data;
+    client.broadcast.emit("onTable", { data: arr });
   });
+  let curPLayer = 1;
+  client.on("start", (id) => {
+    // users[users.findIndex(el=>el.id==id)].waiting=true
+    intervals.forEach((el, i) => clearInterval(el));
 
-  client.on('onWait',(id)=>{
-  // users[users.findIndex(el=>el.id==id)].waiting=true
-  client.broadcast.emit('onWait',{id:id})
-  })
-  
+    if (id.curPLayer) return;
+    curPLayer = id.id;
+    console.log(curPLayer);
+    timer = 10;
+
+    interval = setInterval(() => {
+      timer--;
+      if (timer == 0) {
+        curPLayer == 1 ? (curPLayer = 2) : (curPLayer = 1);
+        console.log("zmiana", id.id, curPLayer);
+        client.emit("onWait", { timer: timer, curPLayer: curPLayer });
+        timer = 10;
+      }
+      // if (timer == -1) ;
+
+      client.broadcast.emit("onWait", { timer: timer, curPLayer: curPLayer });
+    }, 1000);
+    intervals.push(interval);
+  });
 });
-
-
-
 
 server.listen(PORT, function () {
   console.log("start serwera na porcie " + PORT);

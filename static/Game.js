@@ -25,36 +25,49 @@ export default class Game {
 
     this.client.on("onTable", (wow) => {
       this.plansza = wow.data;
-      console.log(this.plansza);
       this.clearScene();
       this.renderBoard();
       this.rednerPionki();
     });
 
-    this.client.on("onWait", (id) => {
-      console.log("id", id);
-      if (id == this.id) {
-        this.waiting = true;
-        this.helperClearInterval(this.movingIntervals);
-        console.log(this.movingIntervals);
+    // this.client.on("onWait", (id) => {
+    //   console.log("id", id);
+    //   if (id == this.id) {
+    //     this.waiting = true;
+    //     this.helperClearInterval(this.movingIntervals);
+    //     console.log(this.movingIntervals);
 
-        if (!this.running) this.wait();
-      } else {
+    //     if (!this.running) this.wait();
+    //   } else {
+    //     this.waiting = false;
+    //     let remainingTime = 30;
+    //     const moveInterval = setInterval(() => {
+    //       remainingTime--;
+    //       this.renderTimer(`Czas na ruch: ${remainingTime}`);
+    //       if (remainingTime == 0) {
+    //         clearInterval(moveInterval);
+    //       }
+    //     }, 1000);
+    //     this.movingIntervals.push(moveInterval);
+    //     if (this.intervals) this.helperClearInterval(this.intervals);
+    //     console.log("twoja tura");
+    //   }
+    // });
+    //
+    this.client.on("onWait", (data) => {
+      if (!data.timer) return;
+      this.timer = data.timer;
+      console.log(this.id, data);
+      console.log("cur", data.curPLayer);
+      if (this.id == data.curPLayer) {
+        this.renderTimer(`Pozostało na ruch: ${this.timer}`);
         this.waiting = false;
-        let remainingTime = 30;
-        const moveInterval = setInterval(() => {
-          remainingTime--;
-          this.renderTimer(`Czas na ruch: ${remainingTime}`);
-          if (remainingTime == 0) {
-            clearInterval(moveInterval);
-          }
-        }, 1000);
-        this.movingIntervals.push(moveInterval);
-        if (this.intervals) this.helperClearInterval(this.intervals);
-        console.log("twoja tura");
+      } else {
+        console.log("wow/");
+        this.renderTimer(`Ruch przeciwnika, pozostało: ${this.timer}`);
+        this.waiting = true;
       }
     });
-    //
     this.sendTable = sendTable;
     //
     this.plansza = [
@@ -83,29 +96,29 @@ export default class Game {
     TWEEN.update();
     this.renderer.render(this.scene, this.camera);
   };
-  wait() {
-    this.running = true;
-    let time = 30;
-    this.setWaiting(this.client, this.id == 1 ? 2 : 1);
-    this.helperClearInterval(this.movingIntervals);
-    this.waitInterval = setInterval(() => {
-      time--;
-      this.renderTimer(`Ruch przeciwnika, pozostało: ${time}`);
-      if (time == 0) {
-        this.helperClearInterval(this.intervals);
-        this.running = false;
-        this.setWaiting(this.client, this.id == 1 ? 2 : 1);
-      }
-    }, 1000);
-    this.intervals.push(this.waitInterval);
-  }
+  // wait() {
+  //   this.running = true;
+  //   let time = 30;
+  //   this.setWaiting(this.client, this.id == 1 ? 2 : 1);
+  //   this.helperClearInterval(this.movingIntervals);
+  //   this.waitInterval = setInterval(() => {
+  //     time--;
+  //     this.renderTimer(`Ruch przeciwnika, pozostało: ${time}`);
+  //     if (time == 0) {
+  //       this.helperClearInterval(this.intervals);
+  //       this.running = false;
+  //       this.setWaiting(this.client, this.id);
+  //     }
+  //   }, 1000);
+  //   this.intervals.push(this.waitInterval);
+  // }
   renderTimer(time) {
     document.getElementById("timer").innerText = time;
   }
-  startWaiting() {
-    this.waiting = true;
-    this.wait();
-  }
+  // startWaiting() {
+  //   this.waiting = true;
+  //   this.wait();
+  // }
   helperClearInterval(arr) {
     arr.forEach((el) => clearInterval(el));
   }
@@ -174,6 +187,7 @@ export default class Game {
     if (game.id == 1) {
       this.camera.position.set(0, 200, -300);
       game.color = "white";
+      game.setWaiting(undefined, id);
     } else {
       this.camera.position.set(0, 200, 300);
       game.color = "black";
@@ -234,7 +248,8 @@ export default class Game {
                 this.pionek.material.color.setHex(
                   this.color == "black" ? "0x000000" : "0xffffff"
                 );
-                this.startWaiting();
+                this.setWaiting(undefined, this.id == 1 ? 2 : 1);
+                this.waiting = true;
               })
               .start();
 
