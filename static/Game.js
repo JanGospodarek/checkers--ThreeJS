@@ -1,13 +1,18 @@
 import { Pionek } from "./Pionek.js";
 export default class Game {
   pionki = [];
-  color ;
+  color;
   pionek;
   isStarted;
+  running = false;
+  waiting = false;
   pole;
   kafle = [];
-  constructor(client, sendTable) {
+  intervals = [];
+  movingIntervals = [];
+  constructor(client, sendTable, setWaiting) {
     this.client = client;
+    this.setWaiting = setWaiting;
     this.scene = new THREE.Scene();
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setClearColor(0xfffff0);
@@ -18,10 +23,37 @@ export default class Game {
     this.camera = new THREE.PerspectiveCamera(45, 4 / 3, 0.1, 10000);
     // this.camera.position.set(0, 200, 300);
 
-    this.client.on('onTable',(wow)=>{
-      console.log(wow);
-      this.plansza=wow.data
-    })
+    this.client.on("onTable", (wow) => {
+      this.plansza = wow.data;
+      console.log(this.plansza);
+      this.clearScene();
+      this.renderBoard();
+      this.rednerPionki();
+    });
+
+    this.client.on("onWait", (id) => {
+      console.log("id", id);
+      if (id == this.id) {
+        this.waiting = true;
+        this.helperClearInterval(this.movingIntervals);
+        console.log(this.movingIntervals);
+
+        if (!this.running) this.wait();
+      } else {
+        this.waiting = false;
+        let remainingTime = 30;
+        const moveInterval = setInterval(() => {
+          remainingTime--;
+          this.renderTimer(`Czas na ruch: ${remainingTime}`);
+          if (remainingTime == 0) {
+            clearInterval(moveInterval);
+          }
+        }, 1000);
+        this.movingIntervals.push(moveInterval);
+        if (this.intervals) this.helperClearInterval(this.intervals);
+        console.log("twoja tura");
+      }
+    });
     //
     this.sendTable = sendTable;
     //
@@ -51,6 +83,32 @@ export default class Game {
     TWEEN.update();
     this.renderer.render(this.scene, this.camera);
   };
+  wait() {
+    this.running = true;
+    let time = 30;
+    this.setWaiting(this.client, this.id == 1 ? 2 : 1);
+    this.helperClearInterval(this.movingIntervals);
+    this.waitInterval = setInterval(() => {
+      time--;
+      this.renderTimer(`Ruch przeciwnika, pozostało: ${time}`);
+      if (time == 0) {
+        this.helperClearInterval(this.intervals);
+        this.running = false;
+        this.setWaiting(this.client, this.id == 1 ? 2 : 1);
+      }
+    }, 1000);
+    this.intervals.push(this.waitInterval);
+  }
+  renderTimer(time) {
+    document.getElementById("timer").innerText = time;
+  }
+  startWaiting() {
+    this.waiting = true;
+    this.wait();
+  }
+  helperClearInterval(arr) {
+    arr.forEach((el) => clearInterval(el));
+  }
   renderBoard() {
     const geometry = new THREE.BoxGeometry(30, 30, 30);
     let i = 0;
@@ -108,25 +166,23 @@ export default class Game {
       });
     });
     this.addRaycasterEvents();
-
   }
   startGame(id, game) {
     this.camera = game.camera;
-    this.isStarted=true
+    this.isStarted = true;
     game.id = id;
     if (game.id == 1) {
       this.camera.position.set(0, 200, -300);
-     game.color = "white";
+      game.color = "white";
     } else {
       this.camera.position.set(0, 200, 300);
-     game.color = "black";
+      game.color = "black";
     }
     console.log(this.color);
   }
   addRaycasterEvents() {
-   
     window.addEventListener("click", (event) => {
-      // if(!this.isStarted) return
+      if (this.waiting) return;
       const raycaster = new THREE.Raycaster();
       const mouseVector = new THREE.Vector2();
 
@@ -136,8 +192,7 @@ export default class Game {
       const intersects = raycaster.intersectObjects(this.scene.children);
       if (intersects.length > 0) {
         const object = intersects[0].object;
-        if(!object.data) return
-        console.log(object,this.color);
+        if (!object.data) return;
         if (object.data.name == "pion" && object.data.kolor == this.color) {
           if (this.pionek) {
             this.pionek.material.color.setHex(
@@ -146,7 +201,6 @@ export default class Game {
           }
           object.material.color.setHex(0xffa500);
           this.pionek = object;
-          console.log(this.pionek);
 
           this.kafle.forEach((el) => {
             if (this.pionek && el.data.kolor == "brown") {
@@ -173,17 +227,14 @@ export default class Game {
               .onUpdate(() => {})
               .onComplete(() => {
                 this.sendTable(this.client, this.plansza);
-            
+
                 this.clearScene();
                 this.renderBoard();
                 this.rednerPionki();
                 this.pionek.material.color.setHex(
                   this.color == "black" ? "0x000000" : "0xffffff"
                 );
-
-          
-          
-
+                this.startWaiting();
               })
               .start();
 

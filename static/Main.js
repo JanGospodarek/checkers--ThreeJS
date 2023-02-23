@@ -7,7 +7,7 @@ let ui;
 window.onload = () => {
   const client = io();
   net = new Net();
-  game = new Game(client, net.sendTableSocket);
+  game = new Game(client, net.sendTableSocket,net.setWaiting);
 
   ui = new Ui(
     net.fetchPost,

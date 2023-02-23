@@ -7,7 +7,7 @@
 }
 
 
-#status {
+.status {
     padding: 20px;
     text-align: center;
     background: linear-gradient(35deg, rgba(110, 110, 215, 1) 20%, rgba(10, 205, 205, 1) 71%);

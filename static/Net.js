@@ -36,5 +36,9 @@ export default class Net {
     client.emit("onTable", { data: data });
      
   }
+  setWaiting(client,id){
+    console.log(id);
+    client.emit("onWait", { id: id });
+  }
 
 }

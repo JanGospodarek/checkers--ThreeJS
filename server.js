@@ -8,24 +8,26 @@ const http = require("http");
 const server = http.createServer(app);
 
 app.use(express.json());
-
 app.use(express.static("static"));
 
 let users = [];
+
 app.set("views", path.join(__dirname, "static/views"));
 app.engine("hbs", hbs({ defaultLayout: "main.hbs" }));
 app.set("view engine", "hbs");
 
+
 app.get("/", function (req, res) {
   res.render("index.hbs");
 });
+
 app.post("/handleLogIn", function (req, res) {
   const name = req.body.name;
   if (users.length == 2) {
     res.send({ message: "Utworzono już dwóch użytkowników" });
   } else {
     if (!users.find((el) => el.name == name)) {
-      users.push({ id: users.length + 1, name: name });
+      users.push({ id: users.length + 1, name: name,waiting:false });
       if (users.length == 1)
         res.send({
           message: `Jesteś zalogowany jako ${name}, czekanie na drugiego gracza`,
@@ -36,6 +38,7 @@ app.post("/handleLogIn", function (req, res) {
     } else res.send({ message: `Użytkownik ${name} już istnieje` });
   }
 });
+
 app.post("/checkForPlayers", function (req, res) {
   if (users.length == 2) {
     res.send({
@@ -48,7 +51,9 @@ app.post("/checkForPlayers", function (req, res) {
 app.post("/reset", function (req, res) {
   users = [];
 });
+
 let sendedFirstId = false;
+
 app.post("/start", function (req, res) {
   if (!sendedFirstId) {
     res.send({ id: 1 });
@@ -59,17 +64,23 @@ app.post("/start", function (req, res) {
 });
 
 
-
 const { Server } = require("socket.io");
 const socketio = new Server(server);
 
 socketio.on("connection", (client) => {
-  console.log(client.id);
+
   client.on("onTable", (data) => {
 const arr=data.data
 client.broadcast.emit('onTable',{data:arr})
   });
+
+  client.on('onWait',(id)=>{
+  // users[users.findIndex(el=>el.id==id)].waiting=true
+  client.broadcast.emit('onWait',{id:id})
+  })
+  
 });
+
 
 
 
