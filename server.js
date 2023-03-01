@@ -67,33 +67,39 @@ const { Server } = require("socket.io");
 const socketio = new Server(server);
 let interval,
   intervals = [];
+let curPLayer = 1;
+
 socketio.on("connection", (client) => {
   client.on("onTable", (data) => {
     const arr = data.data;
-    client.broadcast.emit("onTable", { data: arr });
-  });
-  let curPLayer = 1;
-  client.on("start", (id) => {
-    // users[users.findIndex(el=>el.id==id)].waiting=true
-    intervals.forEach((el, i) => clearInterval(el));
 
+    client.broadcast.emit("onTable", {
+      data: arr,
+      oldPosition: data.oldPosition,
+      newPosition: data.newPosition,
+    });
+  });
+
+  client.on("start", (id) => {
+    intervals.forEach((el, i) => clearInterval(el));
     if (id.curPLayer) return;
+
     curPLayer = id.id;
-    console.log(curPLayer);
     timer = 10;
 
     interval = setInterval(() => {
       timer--;
+
       if (timer == 0) {
         curPLayer == 1 ? (curPLayer = 2) : (curPLayer = 1);
         console.log("zmiana", id.id, curPLayer);
-        client.emit("onWait", { timer: timer, curPLayer: curPLayer });
+        client.broadcast.emit("onWait", { timer: timer, curPLayer: curPLayer });
         timer = 10;
       }
-      // if (timer == -1) ;
 
       client.broadcast.emit("onWait", { timer: timer, curPLayer: curPLayer });
     }, 1000);
+
     intervals.push(interval);
   });
 });

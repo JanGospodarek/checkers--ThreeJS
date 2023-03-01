@@ -33,12 +33,15 @@ export default class Net {
       });
     return resData;
   }
-  sendTableSocket(client, data) {
-    console.log(client, data);
-    client.emit("onTable", { data: data });
+  sendTableSocket(data, oldPosition, newPosition) {
+    this.client.emit("onTable", {
+      fromClient: true,
+      data: data,
+      oldPosition: oldPosition,
+      newPosition: newPosition,
+    });
   }
-  setWaiting(client = this.client, id) {
-    console.log(id);
-    client.emit("start", { id: id });
+  setWaiting(id) {
+    this.client.emit("start", { id: id });
   }
 }
