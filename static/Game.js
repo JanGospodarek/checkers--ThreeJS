@@ -39,6 +39,7 @@ export default class Game {
         this.waiting = true;
       }
     });
+
     this.sendTable = sendTable;
     //
     this.plansza = [
@@ -66,20 +67,13 @@ export default class Game {
         { x: wow.newPosition.x, z: wow.newPosition.z }
       );
 
-      this.plansza = wow.data;
-      // new TWEEN.Tween({ x: wow.oldPosition.x, y: 5, z: wow.oldPosition.z })
-      //   .to({ x: wow.newPosition.x, y: 5, z: wow.newPosition.z }, 500)
-      //   .onUpdate(() => {
-      //     console.log("idzie");
-      //   })
-      //   .onComplete(() => {
-      this.clearScene();
-      this.renderBoard();
-      this.rednerPionki();
-      // })
-      // .start();
+      const index = this.pionki.findIndex(
+        (el) =>
+          el.position.x == wow.oldPosition.x &&
+          el.position.z == wow.oldPosition.z
+      );
+      this.animateOpponent(wow, this.pionki[index]);
     });
-    this.render();
   }
 
   render = () => {
@@ -92,7 +86,31 @@ export default class Game {
   renderTimer(time) {
     document.getElementById("timer").innerText = time;
   }
+  animateOpponent(wow, object) {
+    console.log(object.position);
+    new TWEEN.Tween(object.position)
+      .to(
+        {
+          x: wow.newPosition.x,
+          y: object.position.y,
+          z: wow.newPosition.z,
+        },
+        500
+      )
+      .easing(TWEEN.Easing.Bounce.Out)
+      .onUpdate(() => {
+        console.log("idzie");
+      })
+      .onComplete(() => {
+        this.plansza = wow.data;
+        console.log(object.position);
 
+        // this.clearScene();
+        // this.renderBoard();
+        // this.rednerPionki();
+      })
+      .start();
+  }
   helperClearInterval(arr) {
     arr.forEach((el) => clearInterval(el));
   }
@@ -263,6 +281,7 @@ export default class Game {
 
     new TWEEN.Tween(this.pionek.position)
       .to({ x: object.data.x, z: object.data.z }, 500)
+      .easing(TWEEN.Easing.Bounce.Out)
       .onUpdate(() => {})
       .onComplete(() => {
         this.sendTable(this.plansza, oldPosition, {
@@ -313,7 +332,6 @@ export default class Game {
   }
 
   checkWithZbijanie(el) {
-    console.log(el);
     let row;
     this.color == "black" ? (row = 1) : (row = -1);
     if (this.pionek.data.col + 1 == el.data.col) {
