@@ -5,6 +5,7 @@ export default class Game {
   pionek;
   isStarted;
   running = false;
+  pointed;
   waiting = false;
   pole;
   kafle = [];
@@ -16,11 +17,16 @@ export default class Game {
     this.scene = new THREE.Scene();
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setClearColor(0xfffff0);
-    this.renderer.setSize(window.innerWidth, window.innerHeight - 100, true);
+    this.renderer.setSize(window.innerWidth, window.innerHeight, true);
     document.getElementById("root").append(this.renderer.domElement);
     const axes = new THREE.AxesHelper(1000);
     this.scene.add(axes);
-    this.camera = new THREE.PerspectiveCamera(45, 4 / 3, 0.1, 10000);
+    this.camera = new THREE.PerspectiveCamera(
+      45,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      10000
+    );
 
     this.client.on("onWait", (data) => {
       if (!data.timer) return;
@@ -63,13 +69,15 @@ export default class Game {
       this.plansza = wow.data;
       // new TWEEN.Tween({ x: wow.oldPosition.x, y: 5, z: wow.oldPosition.z })
       //   .to({ x: wow.newPosition.x, y: 5, z: wow.newPosition.z }, 500)
-      //   .onUpdate(() => {})
+      //   .onUpdate(() => {
+      //     console.log("idzie");
+      //   })
       //   .onComplete(() => {
       this.clearScene();
       this.renderBoard();
       this.rednerPionki();
-      //   })
-      //   .start();
+      // })
+      // .start();
     });
     this.render();
   }
@@ -184,7 +192,6 @@ export default class Game {
           }
           // object.material.color.setHex(0xffa500);
           this.pionek = object;
-
           this.kafle.forEach((el) => {
             if (this.pionek && el.data.kolor == "brown") {
               el.material.color.setHex(0xa52a2a);
@@ -196,39 +203,8 @@ export default class Game {
                   (this.color == "white" &&
                     this.plansza[el.data.row][el.data.col] == 2)
                 ) {
-                  // this.kafle.forEach((kafel) => {
-                  //   if (this.checkRowAndColZbijany(kafel, el)) {
-                  //     kafel.material.color.setHex(0x00b300);
-                  //   }
-                  // });
                   el.material.color.setHex(0xff0000);
-
-                  // if (
-                  //   el.data.col + 1 == this.pionek.data.col ||
-                  //   el.data.col - 1 == this.pionek.data.col
-                  // ) {
-                  if (this.color == "white") {
-                    const index = this.kafle.findIndex(
-                      (kafel) =>
-                        kafel.data.row - 1 == el.data.row &&
-                        (kafel.data.col + 1 == el.data.col ||
-                          kafel.data.col - 1 == el.data.col)
-                    );
-                    console.log(this.kafle[index]);
-                    this.kafle[index].material.color.setHex(0xff0000);
-                  }
-                  if (this.color == "black") {
-                    const index = this.kafle.findIndex(
-                      (kafel) =>
-                        kafel.data.row + 1 == el.data.row &&
-                        (kafel.data.col + 1 == el.data.col ||
-                          kafel.data.col - 1 == el.data.col)
-                    );
-                    console.log(this.kafle[index]);
-
-                    this.kafle[index].material.color.setHex(0xff0000);
-                  }
-                  // }
+                  this.pointed = el;
                 } else {
                   el.material.color.setHex(0x00b300);
                 }
@@ -243,42 +219,63 @@ export default class Game {
           object.data.kolor == "brown"
         ) {
           if (this.checkRowAndCol(object)) {
-            this.plansza[this.pionek.data.row][this.pionek.data.col] = 0;
-            this.color == "black"
-              ? (this.plansza[object.data.row][object.data.col] = 2)
-              : (this.plansza[object.data.row][object.data.col] = 1);
-            //rerender Scene
-            const oldPosition = {
-              x: 0,
-              z: 0,
-            };
-            oldPosition.x = this.pionek.position.x;
-            oldPosition.z = this.pionek.position.z;
-            new TWEEN.Tween(this.pionek.position)
-              .to({ x: object.data.x, z: object.data.z }, 500)
-              .onUpdate(() => {})
-              .onComplete(() => {
-                this.sendTable(this.plansza, oldPosition, {
-                  x: object.data.x,
-                  z: object.data.z,
-                });
-
-                this.clearScene();
-                this.renderBoard();
-                this.rednerPionki();
-                this.pionek.material.color.setHex(
-                  this.color == "black" ? "0x000000" : "0xffffff"
-                );
-                this.setWaiting(this.id == 1 ? 2 : 1);
-                this.waiting = true;
-              })
-              .start();
+            this.animate(object);
 
             //wysylamy fetch do serwera i zaczynamy czekac na ruch przeciwnika (mechanika podobna jak z logowaniem)
+          }
+
+          if (!this.pointed) return;
+          const index = this.checkWithZbijanie(this.pointed);
+
+          if (index !== -1) {
+            if (this.kafle[index].data.id == object.data.id) {
+              //rerender Scene
+              this.animate(object, true);
+            }
           }
         }
       }
     });
+  }
+  animate(object, bicie = false) {
+    if (this.plansza[object.data.row][object.data.col] !== 0) return;
+
+    if (bicie) this.plansza[this.pointed.data.row][this.pointed.data.col] = 0;
+
+    this.plansza[this.pionek.data.row][this.pionek.data.col] = 0;
+
+    this.color == "black"
+      ? (this.plansza[object.data.row][object.data.col] = 2)
+      : (this.plansza[object.data.row][object.data.col] = 1);
+
+    const oldPosition = {
+      x: 0,
+      z: 0,
+    };
+
+    oldPosition.x = this.pionek.position.x;
+    oldPosition.z = this.pionek.position.z;
+
+    new TWEEN.Tween(this.pionek.position)
+      .to({ x: object.data.x, z: object.data.z }, 500)
+      .onUpdate(() => {})
+      .onComplete(() => {
+        this.sendTable(this.plansza, oldPosition, {
+          x: object.data.x,
+          z: object.data.z,
+        });
+        this.clearScene();
+        this.renderBoard();
+        this.rednerPionki();
+        this.setWaiting(this.id == 1 ? 2 : 1);
+
+        this.pionek.material.color.setHex(
+          this.color == "black" ? "0x000000" : "0xffffff"
+        );
+        this.waiting = true;
+        this.pointed = undefined;
+      })
+      .start();
   }
   clearScene() {
     while (this.scene.children.length > 0) {
@@ -305,5 +302,44 @@ export default class Game {
     const col =
       el.data.col + 1 == base.data.col || el.data.col - 1 == base.data.col;
     return correctRow && col;
+  }
+  checkWithZbijanie(el) {
+    console.log(el);
+    if (this.color == "white") {
+      if (this.pionek.data.col + 1 == el.data.col) {
+        const index = this.kafle.findIndex(
+          (kafel) =>
+            kafel.data.row - 1 == el.data.row &&
+            kafel.data.col - 1 == el.data.col
+        );
+        return index;
+      }
+      if (this.pionek.data.col - 1 == el.data.col) {
+        const index = this.kafle.findIndex(
+          (kafel) =>
+            kafel.data.row - 1 == el.data.row &&
+            kafel.data.col + 1 == el.data.col
+        );
+        return index;
+      }
+    }
+    if (this.color == "black") {
+      if (this.pionek.data.col + 1 == el.data.col) {
+        const index = this.kafle.findIndex(
+          (kafel) =>
+            kafel.data.row + 1 == el.data.row &&
+            kafel.data.col - 1 == el.data.col
+        );
+        return index;
+      }
+      if (this.pionek.data.col - 1 == el.data.col) {
+        const index = this.kafle.findIndex(
+          (kafel) =>
+            kafel.data.row + 1 == el.data.row &&
+            kafel.data.col + 1 == el.data.col
+        );
+        return index;
+      }
+    }
   }
 }
