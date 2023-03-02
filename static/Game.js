@@ -96,6 +96,7 @@ export default class Game {
   helperClearInterval(arr) {
     arr.forEach((el) => clearInterval(el));
   }
+
   renderBoard() {
     const geometry = new THREE.BoxGeometry(30, 30, 30);
     let i = 0;
@@ -130,6 +131,7 @@ export default class Game {
       }
     }
   }
+
   rednerPionki() {
     let index = 0;
     this.plansza.forEach((el, i) => {
@@ -155,6 +157,7 @@ export default class Game {
     });
     this.addRaycasterEvents();
   }
+
   startGame(id, game) {
     this.camera = game.camera;
     this.isStarted = true;
@@ -168,6 +171,7 @@ export default class Game {
       game.color = "black";
     }
   }
+
   addRaycasterEvents() {
     window.addEventListener("click", (event) => {
       if (this.waiting) return;
@@ -237,6 +241,7 @@ export default class Game {
       }
     });
   }
+
   animate(object, bicie = false) {
     if (this.plansza[object.data.row][object.data.col] !== 0) return;
 
@@ -277,11 +282,13 @@ export default class Game {
       })
       .start();
   }
+
   clearScene() {
     while (this.scene.children.length > 0) {
       this.scene.remove(this.scene.children[0]);
     }
   }
+
   checkRowAndCol(el) {
     const correctRow =
       (this.color == "black" && el.data.row + 1 == this.pionek.data.row) ||
@@ -294,6 +301,7 @@ export default class Game {
       (this.color == "white" && this.plansza[el.data.row][el.data.col] == 1);
     return correctRow && correctCol && !zajete;
   }
+
   checkRowAndColZbijany(el, base) {
     console.log(el.data.row, base.data.row);
     const correctRow =
@@ -303,43 +311,26 @@ export default class Game {
       el.data.col + 1 == base.data.col || el.data.col - 1 == base.data.col;
     return correctRow && col;
   }
+
   checkWithZbijanie(el) {
     console.log(el);
-    if (this.color == "white") {
-      if (this.pionek.data.col + 1 == el.data.col) {
-        const index = this.kafle.findIndex(
-          (kafel) =>
-            kafel.data.row - 1 == el.data.row &&
-            kafel.data.col - 1 == el.data.col
-        );
-        return index;
-      }
-      if (this.pionek.data.col - 1 == el.data.col) {
-        const index = this.kafle.findIndex(
-          (kafel) =>
-            kafel.data.row - 1 == el.data.row &&
-            kafel.data.col + 1 == el.data.col
-        );
-        return index;
-      }
+    let row;
+    this.color == "black" ? (row = 1) : (row = -1);
+    if (this.pionek.data.col + 1 == el.data.col) {
+      const index = this.kafle.findIndex(
+        (kafel) =>
+          kafel.data.row + row == el.data.row &&
+          kafel.data.col - 1 == el.data.col
+      );
+      return index;
     }
-    if (this.color == "black") {
-      if (this.pionek.data.col + 1 == el.data.col) {
-        const index = this.kafle.findIndex(
-          (kafel) =>
-            kafel.data.row + 1 == el.data.row &&
-            kafel.data.col - 1 == el.data.col
-        );
-        return index;
-      }
-      if (this.pionek.data.col - 1 == el.data.col) {
-        const index = this.kafle.findIndex(
-          (kafel) =>
-            kafel.data.row + 1 == el.data.row &&
-            kafel.data.col + 1 == el.data.col
-        );
-        return index;
-      }
+    if (this.pionek.data.col - 1 == el.data.col) {
+      const index = this.kafle.findIndex(
+        (kafel) =>
+          kafel.data.row + row == el.data.row &&
+          kafel.data.col + 1 == el.data.col
+      );
+      return index;
     }
   }
 }
