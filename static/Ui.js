@@ -8,11 +8,13 @@ export default class Ui {
     fetchReset,
     fetchStart,
     startGame,
-    game
+    game,
+    client
   ) {
     this.fetchData = fetchPost;
     this.fetchReset = fetchReset;
     this.game = game;
+    this.client = client;
     this.startGame = startGame;
     this.fetchStart = fetchStart;
     this.fetchCheckForPlayers = fetchCheckForPlayers;
@@ -39,6 +41,10 @@ export default class Ui {
       .addEventListener("click", (e) => this.handleLog(e));
     this.reset.addEventListener("click", () => {
       this.handleReset();
+    });
+    client.on("error", (data) => {
+      this.status.innerText = data.msg;
+      client.emit("readyForDisconnect", { b: true });
     });
   }
   handleLog(event) {

@@ -8,8 +8,13 @@ export default class Game {
   pointed;
   waiting = false;
   pole;
+  animateOp = false;
+  opponent;
+  vactor;
+  newPos;
   kafle = [];
   intervals = [];
+  animation;
   movingIntervals = [];
   constructor(client, sendTable, setWaiting) {
     this.client = client;
@@ -61,13 +66,14 @@ export default class Game {
     //
 
     this.client.on("onTable", (wow) => {
-      if (wow.fromClient) return;
+      // if (wow.fromClient) return;
 
       const index = this.pionki.findIndex(
         (el) =>
           el.position.x == wow.oldPosition.x &&
           el.position.z == wow.oldPosition.z
       );
+      console.log("animuj");
 
       this.animateOpponent(wow, this.pionki[index]);
     });
@@ -76,23 +82,78 @@ export default class Game {
   }
 
   render = () => {
-    requestAnimationFrame(this.render);
-    TWEEN.update();
+    // if (this.animateOp) {
 
-    this.camera.lookAt(0, 0, 0);
+    // const x = this.opponent.position.x;
+    // const y = this.opponent.position.y;
+    // const z = this.opponent.position.z;
+    // console.log(this.opponent);
+    // if (Math.ceil(x) == this.newPos.x && Math.ceil(z) == this.newPos.z) {
+    //   this.animateOp = false;
+    // clearInterval(i);
+    //}
 
+    // console.log(this.vector);
+    // let mn;
+    // this.color == "black" ? (mn = -1) : (mn = 1);
+    // console.log(
+    //   this.vector.x / Math.abs(this.vector.x),
+    //   this.vector.z / Math.abs(this.vector.z)
+    // );
+    //   this.opponent.position.x += this.vector.x / Math.abs(this.vector.x) / 10;
+    //   this.opponent.position.z += this.vector.z / Math.abs(this.vector.z) / 10;
+    // }
     this.renderer.render(this.scene, this.camera);
+    requestAnimationFrame(this.render);
+    this.camera.lookAt(0, 0, 0);
+    TWEEN.update();
   };
-
+  TweenAnimate = () => {
+    // requestAnimationFrame(this.TweenAnimate);
+    // TWEEN.update();
+    // this.animation.update();
+  };
   renderTimer(time) {
     document.getElementById("timer").innerText = time;
   }
   animateOpponent(wow, object) {
-    new TWEEN.Tween(object.position)
+    // this.animateOp = true;
+    // this.vector = {
+    //   x: wow.newPosition.x - wow.oldPosition.x,
+    //   y: 0,
+    //   z: wow.newPosition.z - wow.oldPosition.z,
+    // };
+
+    // this.newPos = wow.newPosition;
+    // let i = setInterval(() => {
+    //   // if (this.animateOp) {
+    //   const x = this.opponent.position.x;
+    //   const y = this.opponent.position.y;
+    //   const z = this.opponent.position.z;
+
+    //   if (Math.ceil(x) == this.newPos.x && Math.ceil(z) == this.newPos.z) {
+    //     // this.animateOp = false;
+    //     clearInterval(i);
+    //   }
+
+    //   // console.log(this.vector);
+    //   let mn;
+    //   // this.color == "black" ? (mn = -1) : (mn = 1);
+    //   console.log(
+    //     this.vector.x / Math.abs(this.vector.x),
+    //     this.vector.z / Math.abs(this.vector.z)
+    //   );
+    //   this.opponent.position.x += this.vector.x / Math.abs(this.vector.x) / 10;
+    //   this.opponent.position.z += this.vector.z / Math.abs(this.vector.z) / 10;
+    //   // }
+    // }, 100 / 60);
+    console.log(object);
+
+    this.animation = new TWEEN.Tween(object.position)
       .to(
         {
           x: wow.newPosition.x,
-          y: object.position.y,
+          y: wow.newPosition.y,
           z: wow.newPosition.z,
         },
         500
@@ -109,6 +170,7 @@ export default class Game {
         this.rednerPionki();
       })
       .start();
+    this.TweenAnimate();
   }
   helperClearInterval(arr) {
     arr.forEach((el) => clearInterval(el));
@@ -224,19 +286,15 @@ export default class Game {
                   (this.color == "white" &&
                     this.plansza[el.data.row][el.data.col] == 2)
                 ) {
-                  el.material.color.setHex(0xff0000);
+                  // el.material.color.setHex(0xff0000);
                   this.pointed = el;
-
-                  // const index = this.checkWithZbijanie(this.pointed);
-
-                  // this.kafle[index].material.color.setHex(0x00b300);
-                  // el.material.color.setHex(0x00b300);
                 } else {
                   el.material.color.setHex(0x00b300);
                 }
               }
             }
           });
+          //głupi sposob ale omija to bug
           if (this.pointed) {
             let znaleziono = false;
             this.kafle.forEach((el) => {
@@ -288,10 +346,12 @@ export default class Game {
 
     const oldPosition = {
       x: 0,
+      y: 0,
       z: 0,
     };
 
     oldPosition.x = this.pionek.position.x;
+    oldPosition.y = this.pionek.position.y;
     oldPosition.z = this.pionek.position.z;
 
     new TWEEN.Tween(this.pionek.position)
@@ -301,6 +361,7 @@ export default class Game {
       .onComplete(() => {
         this.sendTable(this.plansza, oldPosition, {
           x: object.data.x,
+          y: oldPosition.y,
           z: object.data.z,
         });
 
@@ -367,6 +428,7 @@ export default class Game {
     if (!el) {
       return index;
     } else {
+      if (this.plansza[el.data.row][el.data.col] !== 0) return false;
       if (el.data.id == this.kafle[index].data.id) {
         return true;
       } else {

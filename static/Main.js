@@ -15,6 +15,7 @@ window.onload = () => {
     net.fetchReset,
     net.fetchStart,
     game.startGame,
-    game
+    game,
+    client
   );
 };

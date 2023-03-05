@@ -70,6 +70,12 @@ let interval,
 let curPLayer = 1;
 
 socketio.on("connection", (client) => {
+  if (users.length == 2) {
+    client.emit("error", { msg: "Osiągnięto maksymalna liczbę użytkowników!" });
+  }
+  client.on("readyForDisconnect", () => {
+    client.disconnect();
+  });
   client.on("onTable", (data) => {
     const arr = data.data;
 
