@@ -62,24 +62,25 @@ export default class Game {
 
     this.client.on("onTable", (wow) => {
       if (wow.fromClient) return;
-      console.log(
-        { x: wow.oldPosition.x, y: 5, z: wow.oldPosition.z },
-        { x: wow.newPosition.x, z: wow.newPosition.z }
-      );
 
       const index = this.pionki.findIndex(
         (el) =>
           el.position.x == wow.oldPosition.x &&
           el.position.z == wow.oldPosition.z
       );
+
       this.animateOpponent(wow, this.pionki[index]);
     });
+
+    this.render();
   }
 
   render = () => {
     requestAnimationFrame(this.render);
-    this.camera.lookAt(0, 0, 0);
     TWEEN.update();
+
+    this.camera.lookAt(0, 0, 0);
+
     this.renderer.render(this.scene, this.camera);
   };
 
@@ -87,7 +88,6 @@ export default class Game {
     document.getElementById("timer").innerText = time;
   }
   animateOpponent(wow, object) {
-    console.log(object.position);
     new TWEEN.Tween(object.position)
       .to(
         {
@@ -103,11 +103,10 @@ export default class Game {
       })
       .onComplete(() => {
         this.plansza = wow.data;
-        console.log(object.position);
 
-        // this.clearScene();
-        // this.renderBoard();
-        // this.rednerPionki();
+        this.clearScene();
+        this.renderBoard();
+        this.rednerPionki();
       })
       .start();
   }
@@ -227,12 +226,28 @@ export default class Game {
                 ) {
                   el.material.color.setHex(0xff0000);
                   this.pointed = el;
+
+                  // const index = this.checkWithZbijanie(this.pointed);
+
+                  // this.kafle[index].material.color.setHex(0x00b300);
+                  // el.material.color.setHex(0x00b300);
                 } else {
                   el.material.color.setHex(0x00b300);
                 }
               }
             }
           });
+          if (this.pointed) {
+            let znaleziono = false;
+            this.kafle.forEach((el) => {
+              // if (znaleziono) return;
+              const bool = this.checkWithZbijanie(this.pointed, el);
+              if (bool) {
+                el.material.color.setHex(0x00b300);
+                znaleziono = true;
+              }
+            });
+          }
         }
 
         if (
@@ -288,6 +303,7 @@ export default class Game {
           x: object.data.x,
           z: object.data.z,
         });
+
         this.clearScene();
         this.renderBoard();
         this.rednerPionki();
@@ -322,7 +338,6 @@ export default class Game {
   }
 
   checkRowAndColZbijany(el, base) {
-    console.log(el.data.row, base.data.row);
     const correctRow =
       (this.color == "black" && el.data.row + 1 == base.data.row) ||
       (this.color == "white" && el.data.row - 1 == base.data.row);
@@ -331,24 +346,58 @@ export default class Game {
     return correctRow && col;
   }
 
-  checkWithZbijanie(el) {
+  checkWithZbijanie(base, el = undefined) {
     let row;
+    let index;
     this.color == "black" ? (row = 1) : (row = -1);
-    if (this.pionek.data.col + 1 == el.data.col) {
-      const index = this.kafle.findIndex(
-        (kafel) =>
-          kafel.data.row + row == el.data.row &&
-          kafel.data.col - 1 == el.data.col
-      );
+
+    index = this.kafle.findIndex((kafel) => {
+      if (this.pionek.data.col + 1 == base.data.col) {
+        return (
+          kafel.data.row + row == base.data.row &&
+          kafel.data.col - 1 == base.data.col
+        );
+      } else if (this.pionek.data.col - 1 == base.data.col) {
+        return (
+          kafel.data.row + row == base.data.row &&
+          kafel.data.col + 1 == base.data.col
+        );
+      }
+    });
+    if (!el) {
       return index;
-    }
-    if (this.pionek.data.col - 1 == el.data.col) {
-      const index = this.kafle.findIndex(
-        (kafel) =>
-          kafel.data.row + row == el.data.row &&
-          kafel.data.col + 1 == el.data.col
-      );
-      return index;
+    } else {
+      if (el.data.id == this.kafle[index].data.id) {
+        return true;
+      } else {
+        return false;
+      }
     }
   }
+
+  //   checkKolejne(base, el) {
+  //     let row;
+  //     let index;
+  //     this.color == "black" ? (row = 1) : (row = -1);
+
+  //     index = this.kafle.findIndex((kafel) => {
+  //       if (this.pionek.data.col + 1 == base.data.col) {
+  //         return (
+  //           kafel.data.row + row == base.data.row &&
+  //           kafel.data.col - 1 == base.data.col
+  //         );
+  //       } else if (this.pionek.data.col - 1 == base.data.col) {
+  //         return (
+  //           kafel.data.row + row == base.data.row &&
+  //           kafel.data.col + 1 == base.data.col
+  //         );
+  //       }
+  //     });
+
+  //     if (el.data.id == this.kafle[index].data.id) {
+  //       return true;
+  //     } else {
+  //       return false;
+  //     }
+  //   }
 }
