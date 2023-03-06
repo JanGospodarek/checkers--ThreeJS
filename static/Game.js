@@ -14,7 +14,10 @@ export default class Game {
   newPos;
   kafle = [];
   intervals = [];
+  inters = [];
+  mojaTura;
   animation;
+  timer = 10;
   movingIntervals = [];
   constructor(client, sendTable, setWaiting) {
     this.client = client;
@@ -22,10 +25,12 @@ export default class Game {
     this.scene = new THREE.Scene();
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setClearColor(0xfffff0);
+    this.board = new THREE.Group();
+    this.pions = new THREE.Group();
     this.renderer.setSize(window.innerWidth, window.innerHeight, true);
     document.getElementById("root").append(this.renderer.domElement);
-    const axes = new THREE.AxesHelper(1000);
-    this.scene.add(axes);
+    // const axes = new THREE.AxesHelper(1000);
+    // this.scene.add(axes);
     this.camera = new THREE.PerspectiveCamera(
       45,
       window.innerWidth / window.innerHeight,
@@ -34,17 +39,21 @@ export default class Game {
     );
 
     this.client.on("onWait", (data) => {
-      if (!data.timer) return;
-      this.timer = data.timer;
-      if (this.id == data.curPLayer) {
-        this.renderTimer(`Pozostało na ruch: ${this.timer}`);
-        this.waiting = false;
-      } else {
-        this.renderTimer(`Ruch przeciwnika, pozostało: ${this.timer}`);
-        this.waiting = true;
-      }
+      // if (!data.timer) return;
+      // this.timer = data.timer;
+      // if (this.id == data.curPLayer) {
+      //   this.renderTimer(`Pozostało na ruch: ${this.timer}`);
+      //   this.waiting = false;
+      // } else {
+      //   this.renderTimer(`Ruch przeciwnika, pozostało: ${this.timer}`);
+      //   this.waiting = true;
+      // }
     });
-
+    this.client.on("changePlayer", (data) => {
+      // if (data && data.color == this.color) return;
+      this.changePlayer();
+      console.log("wowwww");
+    });
     this.sendTable = sendTable;
     //
     this.plansza = [
@@ -64,7 +73,6 @@ export default class Game {
     this.rednerPionki();
 
     //
-
     this.client.on("onTable", (wow) => {
       // if (wow.fromClient) return;
 
@@ -80,7 +88,13 @@ export default class Game {
 
     this.render();
   }
-
+  changePlayer() {
+    this.inters.forEach((el) => clearInterval(el));
+    console.log("koks!");
+    this.mojaTura = !this.mojaTura;
+    this.timer = 10;
+    this.timerF();
+  }
   render = () => {
     // if (this.animateOp) {
 
@@ -108,13 +122,29 @@ export default class Game {
     this.camera.lookAt(0, 0, 0);
     TWEEN.update();
   };
-  TweenAnimate = () => {
-    // requestAnimationFrame(this.TweenAnimate);
-    // TWEEN.update();
-    // this.animation.update();
-  };
+
   renderTimer(time) {
     document.getElementById("timer").innerText = time;
+  }
+  timerF() {
+    this.inters.forEach((el) => clearInterval(el));
+    let i = setInterval(() => {
+      console.log(this.mojaTura);
+      if (this.mojaTura) {
+        this.renderTimer(`Pozostało na ruch: ${this.timer}`);
+        this.waiting = false;
+      } else {
+        this.renderTimer(`Ruch przeciwnika, pozostało: ${this.timer}`);
+        this.waiting = true;
+      }
+      if (this.timer == 0) {
+        this.client.emit("changePlayer");
+        // this.mojaTura = false;
+        clearInterval(i);
+      }
+      this.timer--;
+    }, 1000);
+    this.inters.push(i);
   }
   animateOpponent(wow, object) {
     // this.animateOp = true;
@@ -170,7 +200,6 @@ export default class Game {
         this.rednerPionki();
       })
       .start();
-    this.TweenAnimate();
   }
   helperClearInterval(arr) {
     arr.forEach((el) => clearInterval(el));
@@ -183,22 +212,23 @@ export default class Game {
     for (let index = 0; index < 8; index++) {
       for (let l = 0; l < 8; l++) {
         let color = "";
-        i % 2 == 0 ? (color = "brown") : (color = "grey");
+        i % 2 == 0 ? (color = "grey") : (color = "lightgrey");
         const material = new THREE.MeshBasicMaterial({
           color: color,
-          side: THREE.DoubleSide,
-
-          opacity: 1,
+          side: THREE.DoubleSide, // dwustronny
+          map: new THREE.TextureLoader().load("images.jpg"), // plik tekstury
         });
         const cube = new THREE.Mesh(geometry, material);
         cube.position.set(-105 + 30 * l, -15, -105 + 30 * index);
         this.scene.add(cube);
+        // this.board.add(cube);
+
         const data = {
           id: idI,
           row: index,
           col: l,
           name: "pole",
-          kolor: color,
+          kolor: color == "grey" ? "brown" : "grey",
           x: -105 + 30 * l,
           z: -105 + 30 * index,
         };
@@ -209,6 +239,7 @@ export default class Game {
         if (l == 7) i++;
       }
     }
+    // this.scene.add(this.board);
   }
 
   rednerPionki() {
@@ -230,10 +261,12 @@ export default class Game {
           };
           pionek.data = data;
           this.pionki.push(pionek);
+          // this.pions.add(pionek);
           index++;
         }
       });
     });
+    // this.scene.add(this.pions);
     this.addRaycasterEvents();
   }
 
@@ -241,14 +274,18 @@ export default class Game {
     this.camera = game.camera;
     this.isStarted = true;
     game.id = id;
+
     if (game.id == 1) {
       this.camera.position.set(0, 200, -300);
       game.color = "white";
+      game.mojaTura = true;
       game.setWaiting(undefined, id);
     } else {
       this.camera.position.set(0, 200, 300);
       game.color = "black";
+      game.mojaTura = false;
     }
+    game.timerF();
   }
 
   addRaycasterEvents() {
@@ -266,20 +303,22 @@ export default class Game {
       if (intersects.length > 0) {
         const object = intersects[0].object;
         if (!object.data) return;
-
+        if (this.mojaTura === false) return;
         if (object.data.name == "pion" && object.data.kolor == this.color) {
           if (this.pionek) {
             this.pionek.material.color.setHex(
               this.color == "black" ? "0x000000" : "0xffffff"
             );
           }
-          // object.material.color.setHex(0xffa500);
+          object.material.color.setHex(0xffa500);
           this.pionek = object;
+
           this.kafle.forEach((el) => {
             if (this.pionek && el.data.kolor == "brown") {
-              el.material.color.setHex(0xa52a2a);
+              el.material.color.setHex(0x808080);
 
               if (this.checkRowAndCol(el)) {
+                console.log(el);
                 if (
                   (this.color == "black" &&
                     this.plansza[el.data.row][el.data.col] == 1) ||
@@ -368,8 +407,8 @@ export default class Game {
         this.clearScene();
         this.renderBoard();
         this.rednerPionki();
-        this.setWaiting(this.id == 1 ? 2 : 1);
-
+        // this.setWaiting(this.id == 1 ? 2 : 1);
+        this.client.emit("changePlayer", { color: this.color });
         this.pionek.material.color.setHex(
           this.color == "black" ? "0x000000" : "0xffffff"
         );
@@ -380,9 +419,35 @@ export default class Game {
   }
 
   clearScene() {
-    while (this.scene.children.length > 0) {
+    // this.board.parent.remove(this.board);
+    // for (let index = 0; index < this.board.children.length; index++) {
+    //   this.board.remove(this.board.children[index]);
+    // }
+    // for (let index = 0; index < this.pions.children.length; index++) {
+    //   this.pions.remove(this.pions.children[index]);
+    // }
+    // // this.renderBoard();
+    // for (let index = 0; index < this.scene.children.length; index++) {
+    //   const el = this.scene.children[index];
+    //   if (el.data) {
+    //     switch (el.data.kolor) {
+    //       case "grey":
+    //         el.material.color.setHex("0x696969");
+    //         break;
+    //       case "black":
+    //         el.material.color.setHex("0x000000");
+    //         break;
+    //       case "white":
+    //         el.material.color.setHex("0xffffff");
+    //         break;
+    //       case "brown":
+    //         el.material.color.setHex("0xa52a2a");
+    //         break;
+    //     }
+    //   }
+    // }
+    while (this.scene.children.length > 0)
       this.scene.remove(this.scene.children[0]);
-    }
   }
 
   checkRowAndCol(el) {
@@ -395,6 +460,7 @@ export default class Game {
     const zajete =
       (this.color == "black" && this.plansza[el.data.row][el.data.col] == 2) ||
       (this.color == "white" && this.plansza[el.data.row][el.data.col] == 1);
+
     return correctRow && correctCol && !zajete;
   }
 

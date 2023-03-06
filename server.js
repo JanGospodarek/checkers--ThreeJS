@@ -64,6 +64,7 @@ app.post("/start", function (req, res) {
 });
 
 const { Server } = require("socket.io");
+const { log } = require("console");
 const socketio = new Server(server);
 let interval,
   intervals = [];
@@ -84,29 +85,30 @@ socketio.on("connection", (client) => {
       oldPosition: data.oldPosition,
       newPosition: data.newPosition,
     });
+    client.broadcast.emit("changePlayer");
   });
 
   client.on("start", (id) => {
-    intervals.forEach((el, i) => clearInterval(el));
-    if (id.curPLayer) return;
-
-    curPLayer = id.id;
-    timer = 10;
-
-    interval = setInterval(() => {
-      timer--;
-
-      if (timer == 0) {
-        curPLayer == 1 ? (curPLayer = 2) : (curPLayer = 1);
-        console.log("zmiana", id.id, curPLayer);
-        client.broadcast.emit("onWait", { timer: timer, curPLayer: curPLayer });
-        timer = 10;
-      }
-
-      client.broadcast.emit("onWait", { timer: timer, curPLayer: curPLayer });
-    }, 1000);
-
-    intervals.push(interval);
+    // intervals.forEach((el, i) => clearInterval(el));
+    // if (id.curPLayer) return;
+    // curPLayer = id.id;
+    // timer = 10;
+    // interval = setInterval(() => {
+    //   timer--;
+    //   if (timer == 0) {
+    //     curPLayer == 1 ? (curPLayer = 2) : (curPLayer = 1);
+    //     console.log("zmiana", id.id, curPLayer);
+    //     client.broadcast.emit("onWait", { timer: timer, curPLayer: curPLayer });
+    //     // client.emit("onWait", { timer: timer, curPLayer: curPLayer });
+    //     timer = 10;
+    //   }
+    //   client.broadcast.emit("onWait", { timer: timer, curPLayer: curPLayer });
+    // }, 1000);
+    // intervals.push(interval);
+  });
+  client.on("changePlayer", (data) => {
+    console.log("przyszlo");
+    client.emit("changePlayer");
   });
 });
 

@@ -5,7 +5,12 @@ export class Pionek extends THREE.Mesh {
     this.l = l;
     this.i = i;
     this.num == 1 ? (this.color = "white") : (this.color = "black");
-    this.material = new THREE.MeshBasicMaterial({ color: this.color });
+
+    this.material = new THREE.MeshBasicMaterial({
+      color: this.color,
+      side: THREE.DoubleSide, // dwustronny
+      map: new THREE.TextureLoader().load("crack.png"), // plik tekstury
+    });
     this.geometry = new THREE.CylinderGeometry(12, 12, 10, 32);
     this.cylinder = new THREE.Mesh(this.geometry, this.material);
   }

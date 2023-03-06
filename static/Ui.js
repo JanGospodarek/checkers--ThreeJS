@@ -21,7 +21,7 @@ export default class Ui {
     this.name = document.querySelector("#nazwa");
     this.status = document.querySelector("#status");
     this.dialog = document.querySelector("#dialog");
-    this.reset = document.querySelector("#reset");
+    // this.reset = document.querySelector("#reset");
 
     this.overlay = document.querySelector(".overlay");
     let interval = setInterval(() => {
@@ -39,9 +39,9 @@ export default class Ui {
     document
       .querySelector("#log")
       .addEventListener("click", (e) => this.handleLog(e));
-    this.reset.addEventListener("click", () => {
-      this.handleReset();
-    });
+    // this.reset.addEventListener("click", () => {
+    //   this.handleReset();
+    // });
     client.on("error", (data) => {
       this.status.innerText = data.msg;
       client.emit("readyForDisconnect", { b: true });
